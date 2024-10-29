@@ -1,50 +1,155 @@
-# React + TypeScript + Vite
+# Rem-Password Chrome Extension
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A secure password generator and manager Chrome extension built with React and TypeScript. Generate strong passwords, save them securely, and access them easily.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 Generate secure passwords
+- 📏 Customizable password length
+- 🔢 Optional numbers and symbols
+- 💾 Save passwords locally
+- 📋 Quick copy to clipboard
+- 🎨 Clean, modern UI with dark theme
+- 🛡️ Secure storage using Chrome's built-in storage API
 
-## Expanding the ESLint configuration
+## Technologies Used
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- React 18
+- TypeScript
+- Tailwind CSS
+- Vite
+- Lucide React Icons
+- Chrome Extension API
 
-- Configure the top-level `parserOptions` property like this:
+## Prerequisites
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+Before you begin, ensure you have installed:
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- Google Chrome browser
+
+## Development Setup
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/rem-password-chrome
+cd rem-password-chrome
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+2. Install dependencies
+```bash
+npm install
+```
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+3. Create required icon files
+```bash
+# Install Sharp for icon generation
+npm install sharp --save-dev
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
+# Create generate-icons.cjs file with this content:
+const sharp = require('sharp');
+
+const sizes = [16, 48, 128];
+
+async function generateIcons() {
+  for (const size of sizes) {
+    await sharp('public/icon.svg')
+      .resize(size, size)
+      .png()
+      .toFile(`public/icon${size}.png`);
+  }
+}
+
+generateIcons().catch(console.error);
+
+# Run icon generation
+node generate-icons.cjs
+```
+
+4. Build the extension
+```bash
+npm run build
+```
+
+## Loading the Extension in Chrome
+
+1. Open Google Chrome
+2. Navigate to `chrome://extensions/`
+3. Enable "Developer mode" in the top right corner
+4. Click "Load unpacked" in the top left
+5. Select the `dist` folder from your project directory
+
+## Development
+
+- Start development server:
+```bash
+npm run dev
+```
+
+- Build for production:
+```bash
+npm run build
+```
+
+## Project Structure
+
+```
+rem-password-chrome/
+├── public/
+│   ├── icon.svg
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+├── src/
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── manifest.json
+├── generate-icons.cjs
+├── package.json
+└── vite.config.ts
+```
+
+## Key Files
+
+### manifest.json
+```json
+{
+  "manifest_version": 3,
+  "name": "rem-password-chrome",
+  "description": "A password manager extension",
+  "version": "1.0",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Open rem-password-chrome"
   },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
+```
+
+### vite.config.ts
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: false,
+        manualChunks: undefined
+      }
+    }
   },
+  base: './'
 })
 ```
