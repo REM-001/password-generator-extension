@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "rem-password-chrome",
+  "description": "A password manager extension",
+  "version": "1.0",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Open rem-password-chrome"
+  },
+  "permissions": [
+    "storage",
+    "clipboard-write"
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
