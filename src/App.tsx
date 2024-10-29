@@ -1,10 +1,10 @@
 import  { useState, useEffect } from 'react';
 import { Copy, Save, Shield, Trash } from 'lucide-react';
-import './index.css'
-
+import './index.css';
 
 interface SavedPassword {
   password: string;
+  website: string;  // Add website to interface
   timestamp: number;
 }
 
@@ -13,6 +13,7 @@ function App() {
   const [includeNumbers, setIncludeNumbers] = useState(true);
   const [includeSymbols, setIncludeSymbols] = useState(true);
   const [password, setPassword] = useState('');
+  const [website, setWebsite] = useState('');  // Add website state
   const [savedPasswords, setSavedPasswords] = useState<SavedPassword[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -50,9 +51,14 @@ function App() {
 
   const savePassword = () => {
     if (!password) return;
-    const newSavedPasswords = [...savedPasswords, { password, timestamp: Date.now() }];
+    const newSavedPasswords = [...savedPasswords, { 
+      password, 
+      website: website || 'Unnamed Site', // Use 'Unnamed Site' if no website name
+      timestamp: Date.now() 
+    }];
     setSavedPasswords(newSavedPasswords);
     localStorage.setItem('savedPasswords', JSON.stringify(newSavedPasswords));
+    setWebsite(''); // Clear website input after saving
   };
 
   const deletePassword = (index: number) => {
@@ -103,6 +109,17 @@ function App() {
           </label>
         </div>
 
+        {/* Website Input above Generate Password button */}
+        <div>
+          <input
+            type="text"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="Enter website name (optional)"
+            className="w-full px-3 py-2 bg-gray-800 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none mb-4"
+          />
+        </div>
+
         <button
           onClick={generatePassword}
           className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors"
@@ -115,6 +132,12 @@ function App() {
             <div className="bg-gray-800 p-3 rounded-lg break-all">
               {password}
             </div>
+            {/* Website Label below password */}
+            {website && (
+              <div className="mt-2 text-sm text-gray-400">
+                Website: {website}
+              </div>
+            )}
             <div className="absolute right-2 top-2 flex gap-2">
               <button
                 onClick={copyToClipboard}
@@ -145,7 +168,10 @@ function App() {
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {savedPasswords.map((saved, index) => (
                 <div key={saved.timestamp} className="flex items-center justify-between bg-gray-800 p-2 rounded-lg">
-                  <span className="text-sm truncate mr-2">{saved.password}</span>
+                  <div className="truncate mr-2">
+                    <div className="text-sm font-medium">{saved.website}</div>
+                    <div className="text-sm text-gray-400 truncate">{saved.password}</div>
+                  </div>
                   <button
                     onClick={() => deletePassword(index)}
                     className="p-1 hover:text-red-500 transition-colors"
