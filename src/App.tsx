@@ -1,28 +1,34 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Copy, Save, Shield, Trash } from 'lucide-react';
+import { passwordService, Password } from './services/api';
 import './index.css';
-
-interface SavedPassword {
-  password: string;
-  website: string;  // Add website to interface
-  timestamp: number;
-}
 
 function App() {
   const [length, setLength] = useState(12);
   const [includeNumbers, setIncludeNumbers] = useState(true);
   const [includeSymbols, setIncludeSymbols] = useState(true);
   const [password, setPassword] = useState('');
-  const [website, setWebsite] = useState('');  // Add website state
-  const [savedPasswords, setSavedPasswords] = useState<SavedPassword[]>([]);
+  const [website, setWebsite] = useState('');
+  const [savedPasswords, setSavedPasswords] = useState<Password[]>([]);
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('savedPasswords');
-    if (saved) {
-      setSavedPasswords(JSON.parse(saved));
-    }
+    fetchPasswords();
   }, []);
+
+  const fetchPasswords = async () => {
+    try {
+      setIsLoading(true);
+      const passwords = await passwordService.getPasswords();
+      setSavedPasswords(passwords);
+    } catch (err) {
+      setError('Failed to load passwords');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const generatePassword = () => {
     const charset = {
@@ -43,32 +49,57 @@ function App() {
     setCopied(false);
   };
 
+  const handleSavePassword = async () => {
+    if (!password) return;
+    
+    try {
+      const savedPassword = await passwordService.savePassword(
+        website || 'Unnamed Site',
+        password
+      );
+      
+      if (savedPassword) {
+        setSavedPasswords(prev => [savedPassword, ...prev]);
+        setWebsite('');
+      }
+    } catch (err) {
+      setError('Failed to save password');
+    }
+  };
+
+  const handleDeletePassword = async (id: number) => {
+    try {
+      const success = await passwordService.deletePassword(id);
+      if (success) {
+        setSavedPasswords(prev => prev.filter(p => p.id !== id));
+      }
+    } catch (err) {
+      setError('Failed to delete password');
+    }
+  };
+
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(password);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const savePassword = () => {
-    if (!password) return;
-    const newSavedPasswords = [...savedPasswords, { 
-      password, 
-      website: website || 'Unnamed Site', // Use 'Unnamed Site' if no website name
-      timestamp: Date.now() 
-    }];
-    setSavedPasswords(newSavedPasswords);
-    localStorage.setItem('savedPasswords', JSON.stringify(newSavedPasswords));
-    setWebsite(''); // Clear website input after saving
-  };
-
-  const deletePassword = (index: number) => {
-    const newSavedPasswords = savedPasswords.filter((_, i) => i !== index);
-    setSavedPasswords(newSavedPasswords);
-    localStorage.setItem('savedPasswords', JSON.stringify(newSavedPasswords));
-  };
+  if (isLoading) {
+    return (
+      <div className="w-[350px] min-h-[400px] bg-gray-900 text-white p-6 flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="w-[350px] min-h-[400px] bg-gray-900 text-white p-6">
+      {error && (
+        <div className="bg-red-500 text-white p-2 rounded mb-4">
+          {error}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-6">
         <Shield className="w-6 h-6 text-red-500" />
         <h1 className="text-xl font-bold">Secure Pass Generator</h1>
@@ -109,7 +140,6 @@ function App() {
           </label>
         </div>
 
-        {/* Website Input above Generate Password button */}
         <div>
           <input
             type="text"
@@ -132,7 +162,6 @@ function App() {
             <div className="bg-gray-800 p-3 rounded-lg break-all">
               {password}
             </div>
-            {/* Website Label below password */}
             {website && (
               <div className="mt-2 text-sm text-gray-400">
                 Website: {website}
@@ -147,7 +176,7 @@ function App() {
                 <Copy className="w-4 h-4" />
               </button>
               <button
-                onClick={savePassword}
+                onClick={handleSavePassword}
                 className="p-1 hover:text-red-500 transition-colors"
                 title="Save password"
               >
@@ -166,15 +195,18 @@ function App() {
           <div className="mt-6">
             <h2 className="text-lg font-semibold mb-3">Saved Passwords</h2>
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
-              {savedPasswords.map((saved, index) => (
-                <div key={saved.timestamp} className="flex items-center justify-between bg-gray-800 p-2 rounded-lg">
+              {savedPasswords.map((saved) => (
+                <div key={saved.id} className="flex items-center justify-between bg-gray-800 p-2 rounded-lg">
                   <div className="truncate mr-2">
                     <div className="text-sm font-medium">{saved.website}</div>
-                    <div className="text-sm text-gray-400 truncate">{saved.password}</div>
+                    <div className="text-sm text-gray-400 truncate">
+                      {saved.password}
+                    </div>
                   </div>
                   <button
-                    onClick={() => deletePassword(index)}
+                    onClick={() => handleDeletePassword(saved.id)}
                     className="p-1 hover:text-red-500 transition-colors"
+                    title="Delete password"
                   >
                     <Trash className="w-4 h-4" />
                   </button>
